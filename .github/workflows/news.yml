@@ -1,0 +1,28 @@
+name: 每日新闻日报
+on:
+  schedule:
+    # UTC时间 1点 = 北京时间上午9点自动执行
+    - cron: '0 1 * * *'
+  workflow_dispatch: # 允许手动点击运行测试
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      TIAN_API_KEY: ${{ secrets.TIAN_API_KEY }}
+    steps:
+      - name: 拉取仓库代码
+        uses: actions/checkout@v4
+
+      - name: 安装Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖包
+        run: |
+          pip install cn2an -i https://pypi.tuna.tsinghua.edu.cn/simple
+          pip install opencv-python -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+      - name: 执行日报脚本
+        run: python news.py
