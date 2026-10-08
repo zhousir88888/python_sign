@@ -31,10 +31,14 @@ def draw_news(news_list):
     img.save("news_out.jpg")
     return "news_out.jpg"
 
-# 推送到企微机器人（新版，企微支持的图片发送方式）
+# 推送到企微机器人（修复40088报错版本）
 def send_wechat(img_path):
-    # 上传图片获取media_id
-    upload_url = f"{WECHAT_WEBHOOK}&type=image"
+    # 把webhook链接拆出key
+    # webhook格式：https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxx
+    key = WECHAT_WEBHOOK.split("key=")[1]
+    upload_url = f"https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media?key={key}&type=image"
+    
+    # 1.上传图片获取media_id
     with open(img_path, "rb") as f:
         upload_res = requests.post(upload_url, files={"media": f}).json()
     print("图片上传结果：", upload_res)
@@ -42,7 +46,7 @@ def send_wechat(img_path):
         raise Exception(f"图片上传失败：{upload_res}")
     media_id = upload_res["media_id"]
 
-    # 发送图片消息
+    # 2.发送图片消息
     send_data = {
         "msgtype": "image",
         "image": {
