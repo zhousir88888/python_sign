@@ -16,6 +16,7 @@ if not QYWX_WEBHOOK:
 def get_bulletin():
     url = f"https://apis.tianapi.com/bulletin/index?key={TIAN_API_KEY}"
     res = requests.get(url).json()
+    print("天行API返回完整数据：", res)
     return res
 
 # 企业微信机器人发送图片
