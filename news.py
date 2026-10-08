@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 # 读取环境变量
 TIAN_API_KEY = os.getenv("TIAN_API_KEY")
 WECHAT_WEBHOOK = os.getenv("QYWX_WEBHOOK")
+REPO_RAW_BASE = "https://raw.githubusercontent.com/zhousir888/python_sign/master/"
 
 # 获取每日简报
 def get_bulletin():
@@ -31,9 +32,11 @@ def draw_news(news_list):
     img.save("news_out.jpg")
     return "news_out.jpg"
 
-# ========== 改用【企微markdown图文消息】，不再上传素材，规避40084报错 ==========
-def send_wechat_markdown(news_list):
+# 推送带图片的markdown消息
+def send_wechat_markdown_with_img(news_list):
+    img_url = REPO_RAW_BASE + "news_out.jpg"
     content = "## 📰 每日新闻简报\n"
+    content += f"![新闻图]({img_url})\n\n"
     for idx, item in enumerate(news_list[:8], 1):
         content += f"{idx}. {item['title']}\n\n"
 
@@ -49,5 +52,5 @@ def send_wechat_markdown(news_list):
 if __name__ == "__main__":
     news_list = get_bulletin()
     draw_news(news_list)
-    send_wechat_markdown(news_list)
-    print("✅ 任务完成，已推送文字版简报到企微")
+    send_wechat_markdown_with_img(news_list)
+    print("✅ 任务完成，已推送带图片的简报到企微")
