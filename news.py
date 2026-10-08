@@ -1,9 +1,10 @@
+import os
 import requests
 from PIL import Image, ImageDraw, ImageFont
-import base64
 
-TIAN_API_KEY = "6c3682ccc08984c603332eba6ec1f82b"
-WECHAT_WEBHOOK = ""
+# 从Github Actions的Secrets读取密钥
+TIAN_API_KEY = os.getenv("TIAN_API_KEY")
+WECHAT_WEBHOOK = os.getenv("QYWX_WEBHOOK")
 
 # 获取每日简报
 def get_bulletin():
@@ -11,7 +12,7 @@ def get_bulletin():
     res = requests.get(url).json()
     print("API返回：", res)
     if res["code"] != 200:
-        raise Exception(f"接口错误：{res['msg']}")
+        raise Exception(f"接口错误: {res['msg']}")
     return res["result"]["list"]
 
 # 绘制图片
@@ -30,17 +31,32 @@ def draw_news(news_list):
     img.save("news_out.jpg")
     return "news_out.jpg"
 
-# 推送到企微机器人
+# 推送到企微机器人（新版，企微支持的图片发送方式）
 def send_wechat(img_path):
+    # 上传图片获取media_id
+    upload_url = f"{WECHAT_WEBHOOK}&type=image"
     with open(img_path, "rb") as f:
-        b64 = base64.b64encode(f.read()).decode()
-    payload = {
-        "msgtype": "image",
-        "image": {"base64": b64, "md5": ""}
-    }
-    requests.post(WECHAT_WEBHOOK, json=payload)
+        upload_res = requests.post(upload_url, files={"media": f}).json()
+    print("图片上传结果：", upload_res)
+    if upload_res.get("errcode") != 0:
+        raise Exception(f"图片上传失败：{upload_res}")
+    media_id = upload_res["media_id"]
 
+    # 发送图片消息
+    send_data = {
+        "msgtype": "image",
+        "image": {
+            "media_id": media_id
+        }
+    }
+    send_res = requests.post(WECHAT_WEBHOOK, json=send_data).json()
+    print("消息发送结果：", send_res)
+    if send_res.get("errcode") != 0:
+        raise Exception(f"消息发送失败：{send_res}")
+
+# 程序入口，自动执行整套流程
 if __name__ == "__main__":
-    news = get_bulletin()
-    img_file = draw_news(news)
-    # send_wechat(img_file)
+    news_list = get_bulletin()
+    img_file = draw_news(news_list)
+    send_wechat(img_file)
+    print("✅ 全部任务执行完成")
