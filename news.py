@@ -2,7 +2,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 import base64
 
-TIAN_API_KEY = "你的key"
+TIAN_API_KEY = "6c3682ccc08984c603332eba6ec1f82b"
 WECHAT_WEBHOOK = ""
 
 # 获取每日简报
