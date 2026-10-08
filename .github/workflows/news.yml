@@ -1,24 +1,36 @@
 name: 每日新闻简报
+
 on:
+  workflow_dispatch: # 手动触发
+  # 定时任务，北京时间早8点运行（可选）
   schedule:
-    # UTC时间 0点 = 北京时间早上8点，每天早上8点自动运行
     - cron: '0 0 * * *'
-  workflow_dispatch: # 支持手动点击触发测试
 
 jobs:
   run:
     runs-on: ubuntu-latest
-    env:
-      TIAN_API_KEY: ${{ secrets.TIAN_API_KEY }}
-      QYWX_WEBHOOK: ${{ secrets.QYWX_WEBHOOK }}
     steps:
-      - uses: actions/checkout@v4
-      # 安装ubuntu中文字体，解决中文方框乱码
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: 安装中文字体
-        run: sudo apt-get install -y fonts-wqy-zenhei
-      # 安装python依赖
+        run: sudo apt update && sudo apt install -y fonts-wqy-zenhei
+
       - name: 安装python依赖
-        run: |
-          pip install requests pillow
+        run: pip install requests pillow
+
       - name: 执行脚本生成图片+推送微信
         run: python news.py
+        env:
+          TIAN_API_KEY: ${{ secrets.TIAN_API_KEY }}
+          QYWX_WEBHOOK: ${{ secrets.QYWX_WEBHOOK }}
+
+      - name: 提交图片回仓库
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add news_out.jpg
+          git commit -m "auto update news_out.jpg" || echo "无变化无需提交"
+          git push
