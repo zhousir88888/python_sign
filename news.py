@@ -1,11 +1,11 @@
 import os
+import base64
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
 # 读取环境变量
 TIAN_API_KEY = os.getenv("TIAN_API_KEY")
 WECHAT_WEBHOOK = os.getenv("QYWX_WEBHOOK")
-REPO_RAW_BASE = "https://raw.githubusercontent.com/zhousir888/python_sign/master/"
 
 # 获取每日简报
 def get_bulletin():
@@ -32,25 +32,38 @@ def draw_news(news_list):
     img.save("news_out.jpg")
     return "news_out.jpg"
 
-# 推送带图片的markdown消息
-def send_wechat_markdown_with_img(news_list):
-    img_url = REPO_RAW_BASE + "news_out.jpg"
-    content = "## 📰 每日新闻简报\n"
-    content += f"![新闻图]({img_url})\n\n"
-    for idx, item in enumerate(news_list[:8], 1):
-        content += f"{idx}. {item['title']}\n\n"
+# 图片转base64
+def img_to_base64(img_path):
+    with open(img_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
 
+# 企微原生图片消息
+def send_wechat_image(base64_str):
     payload = {
-        "msgtype": "markdown",
-        "markdown": {
-            "content": content
+        "msgtype": "image",
+        "image": {
+            "base64": base64_str
         }
     }
     resp = requests.post(WECHAT_WEBHOOK, json=payload)
-    print("markdown消息返回：", resp.json())
+    print("图片消息返回：", resp.json())
+
+# 文字简报
+def send_wechat_text(news_list):
+    content = "📰 每日新闻简报\n"
+    for idx, item in enumerate(news_list[:8],1):
+        content += f"{idx}. {item['title']}\n"
+    payload = {
+        "msgtype": "text",
+        "text": {"content": content}
+    }
+    resp = requests.post(WECHAT_WEBHOOK, json=payload)
+    print("文字消息返回：", resp.json())
 
 if __name__ == "__main__":
     news_list = get_bulletin()
-    draw_news(news_list)
-    send_wechat_markdown_with_img(news_list)
-    print("✅ 任务完成，已推送带图片的简报到企微")
+    img_file = draw_news(news_list)
+    b64 = img_to_base64(img_file)
+    send_wechat_image(b64)
+    send_wechat_text(news_list)
+    print("✅ 任务完成：图片+文字两条消息推送到企微")
